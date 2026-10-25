@@ -1,0 +1,6 @@
+build/
+*.png
+!docs/*.png
+frames/
+.DS_Store
+.vscode/
