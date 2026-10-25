@@ -1,67 +1,32 @@
-#ifndef OPTIMALTRANSPORT_H
-#define OPTIMALTRANSPORT_H
+#pragma once
 
-#include "PowerDiagram.h"
-#include "lbfgs.h"
+#include <vector>
 
+#include "polygon.h"
 
-class OptimalTransport {
+// Semi-discrete optimal transport between the uniform measure on the unit square and
+// N fluid particles plus one "air" phase. Each particle must receive area
+// fluid_fraction / N; the air receives the remaining 1 - fluid_fraction.
+//
+// The transport plan is a power diagram whose weights maximize the concave dual
+//   g(W) = sum_i [ integral over cell_i of |x - p_i|^2 - w_i |cell_i| + lambda w_i ]
+//          + w_air (air_fraction - air_area),
+// with gradient dg/dw_i = lambda - |cell_i|. We maximize g with L-BFGS.
+class FluidTransportSolver {
 public:
-    OptimalTransport(const std::vector<Vector>& points,
-                     const std::vector<double>& weights)
-      : points_(points)
-      , weights_(weights)
-      , solution_(points_, weights_)
-    {}
-    
-    static lbfgsfloatval_t evaluateCallback(void* instance, const lbfgsfloatval_t* x, lbfgsfloatval_t* g, int n, lbfgsfloatval_t step);
-    lbfgsfloatval_t evaluate(const lbfgsfloatval_t* x, lbfgsfloatval_t* g, int n, lbfgsfloatval_t step);
+    explicit FluidTransportSolver(double fluid_fraction) : fluid_fraction_(fluid_fraction) {}
 
-    static lbfgsfloatval_t optimizeFluidCallback(void* instance, const lbfgsfloatval_t* x, lbfgsfloatval_t* g, int n, lbfgsfloatval_t step);
-    lbfgsfloatval_t optimizeFluid(const lbfgsfloatval_t* x, lbfgsfloatval_t* g, int n, lbfgsfloatval_t step);
-    
-    static int progressCallback(void* instance, const lbfgsfloatval_t* x, const lbfgsfloatval_t* g, lbfgsfloatval_t fx, lbfgsfloatval_t xnorm, lbfgsfloatval_t gnorm, lbfgsfloatval_t step, int n, int k, int ls);
-    int progress(const lbfgsfloatval_t* x, const lbfgsfloatval_t* g, lbfgsfloatval_t fx, lbfgsfloatval_t xnorm, lbfgsfloatval_t gnorm, lbfgsfloatval_t step, int n, int k, int ls);
+    struct Result {
+        std::vector<Polygon> cells;  // one per particle; the air is the complement
+        int status = 0;              // liblbfgs return code, 0 on convergence
+    };
 
-    void compute();
-    int compute_fluid();
+    Result solve(const std::vector<Vec2>& particles) const;
 
-    void save(const std::string& filename) const {
-        solution_.save(filename);
-    }
-
-    std::vector<Vector> getPoints() const {
-        return points_;
-    }
-
-    std::vector<double> getWeights() const {
-        return weights_;
-    }
-
-    void setPoints(const std::vector<Vector>& points) {
-        points_ = points;
-    }
-
-    void setWeights(const std::vector<double>& weights) {
-        weights_ = weights;
-    }
-
-    PowerDiagram getSolution() const {
-        return solution_;
-    }
-
-    double calculateA(double triArea, const Vector& v0, const Vector& v1, const Vector& v2, const Vector& pt);
-
-    
-
-
-
+    // Negated dual value and gradient for weights `x` (N particle weights, then the air
+    // weight), in the form liblbfgs minimizes. Public so the callback can reach it.
+    double negated_dual(const std::vector<Vec2>& particles, const double* x, double* gradient, int n) const;
 
 private:
-    std::vector<Vector> points_;    
-    std::vector<double> weights_;
-    PowerDiagram    solution_;
+    double fluid_fraction_;
 };
-
-
-#endif // OPTIMALTRANSPORT_H

@@ -1,24 +1,14 @@
-#ifndef POWERDIAGRAM_H
-#define POWERDIAGRAM_H
+#pragma once
 
-#include "Voronoi.h"
+#include <vector>
 
-class PowerDiagram : public Voronoi {
-public:
-    PowerDiagram(std::vector<Vector> points, std::vector<double> weights) : Voronoi(points), weights(weights) {}
-    void compute();
-    void compute_fluid();
-    std::vector<double> weights;
-    Polygon clip_circle(Polygon& poly,Polygon& clip) const;
-    Polygon clip_fluid(Polygon& cell, int i, int j, const Vector* points, const double* weights);
+#include "polygon.h"
 
-
-protected:
-    Polygon clipPolygon(const Polygon& poly, const Vector& P0, const Vector& Pi, int i0, int ii) const;
-    Polygon compute_voronoi_cell(int idx) const;
-    Polygon compute_voronoi_cell_fluid(int idx) ;
-
-
-};
-
-#endif // POWERDIAGRAM_H
+// Power diagram of weighted sites restricted to the unit square. The cell of site i is
+//   { x : |x - p_i|^2 - w_i <= |x - p_j|^2 - w_j for all j }.
+//
+// For the free-surface fluid, each cell is further intersected with the disk
+// |x - p_i|^2 - w_i <= -w_air, i.e. the region where the site beats the "air" phase,
+// whose radius is sqrt(w_i - w_air).
+std::vector<Polygon> compute_power_cells(const std::vector<Vec2>& sites, const std::vector<double>& weights,
+                                         double air_weight);

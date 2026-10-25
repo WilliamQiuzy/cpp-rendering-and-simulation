@@ -1,74 +1,48 @@
-# include "Fluid.h"
+#include "fluid.h"
 
-#include <iostream>
-#include <fstream>
-#include <filesystem>
+#include <utility>
 
+FluidSimulation::FluidSimulation(const std::vector<Vec2>& initial_positions, const FluidParameters& parameters)
+    : parameters_(parameters),
+      solver_(parameters.fluid_fraction),
+      positions_(initial_positions),
+      velocities_(initial_positions.size()) {}
 
-Fluid::Fluid(int N) {
-    initialize(N);
-}
+std::vector<Polygon> FluidSimulation::step() {
+    FluidTransportSolver::Result transport = solver_.solve(positions_);
+    // If L-BFGS did not converge, the cells are unreliable and only gravity acts this step.
+    last_solver_status_ = transport.status;
+    const bool use_cells = transport.status == 0;
 
-void Fluid::initialize(int N) {
-    particles_.resize(N);
-    velocities_.resize(N);
-    for (int i = 0; i < N; ++i) {
-        particles_[i] = Vector(uniform_gen(engine), uniform_gen(engine), 0);
-        velocities_[i] = Vector(0, 0, 0);
+    const double stiffness = 1.0 / (parameters_.spring_epsilon * parameters_.spring_epsilon);
+    for (std::size_t i = 0; i < positions_.size(); ++i) {
+        Vec2 force = parameters_.particle_mass * parameters_.gravity;
+        if (use_cells) force += stiffness * (transport.cells[i].centroid() - positions_[i]);
+
+        // Semi-implicit Euler.
+        velocities_[i] += parameters_.time_step * force / parameters_.particle_mass;
+        positions_[i] += parameters_.time_step * velocities_[i];
+        keep_inside_unit_square(positions_[i], velocities_[i]);
     }
-    return ;
+    return std::move(transport.cells);
 }
 
-
-void Fluid::compute() {
-    const int totalFrames = 400;
-    const double mass = 200;
-    const double epsilon = 0.004 * 0.004;
-    const double timeStep = 0.003;
-    const Vector gravity(0, -9.81);
-
-    int particleCount = particles_.size();
-    std::filesystem::create_directories("frames");
-
-    for (int frame = 0; frame < totalFrames; ++frame) {
-        std::vector<double> initW(particleCount, 1.0);
-        OptimalTransport solver(particles_, initW);
-
-        int res = solver.compute_fluid();
-
-        std::vector<Polygon> voronoiDiagram = solver.getSolution().voronoi;
-        save_frame(voronoiDiagram, "frames/animation", frame);
-        std::cout << "frame output: " << frame << std::endl;
-
-
-        for (int i = 0; i < particleCount; ++i) {
-            Vector springForce;
-            if (res==0) {
-                springForce = (voronoiDiagram[i].computeCentroid() - particles_[i]) / epsilon;
-            } else {
-                springForce = Vector(0, 0, 0);
-            }
-            
-            Vector totalForce = springForce + gravity * mass;
-            velocities_[i] = velocities_[i] +  timeStep * totalForce / mass;
-            particles_[i] = particles_[i] +  timeStep * velocities_[i];
-
-            if (particles_[i][0] < 0) {
-                particles_[i][0] = -particles_[i][0];
-                velocities_[i][0] = 0;
-            }
-            if (particles_[i][1] < 0) {
-                particles_[i][1] = -particles_[i][1];
-                velocities_[i][1] = 0;
-            }
-            if (particles_[i][0] >= 1) {
-                particles_[i][0] = 2 - particles_[i][0];
-                velocities_[i][0] = 0;
-            }
-            if (particles_[i][1] >= 1) {
-                particles_[i][1] = 2 - particles_[i][1];
-                velocities_[i][1] = 0;
-            }
-        }
+// Reflects a particle that left the domain back inside and stops its normal velocity.
+void FluidSimulation::keep_inside_unit_square(Vec2& position, Vec2& velocity) const {
+    if (position.x < 0.0) {
+        position.x = -position.x;
+        velocity.x = 0.0;
+    }
+    if (position.y < 0.0) {
+        position.y = -position.y;
+        velocity.y = 0.0;
+    }
+    if (position.x >= 1.0) {
+        position.x = 2.0 - position.x;
+        velocity.x = 0.0;
+    }
+    if (position.y >= 1.0) {
+        position.y = 2.0 - position.y;
+        velocity.y = 0.0;
     }
 }

@@ -1,50 +1,30 @@
-#include <vector>
-#include <iostream>
-#include <random>
-#include <chrono>
-#include <memory>
-#include <unistd.h>
+#pragma once
 
-#ifndef VECTOR_H
-#define VECTOR_H
+#include <cmath>
 
-static std::default_random_engine engine(44);
-static std::uniform_real_distribution<double> uniform_gen(0, 1);
+// Two-dimensional vector; the simulation domain is the unit square [0, 1]^2.
+struct Vec2 {
+    double x = 0.0;
+    double y = 0.0;
 
-class Vector {
-public:
-    explicit Vector(double x = 0, double y = 0, double z = 0) {
-        data[0] = x;
-        data[1] = y;
-        data[2] = z;
-    }
-    double norm2() const {
-        return data[0] * data[0] + data[1] * data[1] + data[2] * data[2];
-    }
-    double norm() const {
-        return sqrt(norm2());
-    }
-    void normalize() {
-        double n = norm();
-        data[0] /= n;
-        data[1] /= n;
-        data[2] /= n;
-    }
-    double operator[](int i) const { return data[i]; };
-    double& operator[](int i) { return data[i]; };
-    double data[3];
+    constexpr Vec2() = default;
+    constexpr Vec2(double x_, double y_) : x(x_), y(y_) {}
+
+    double length_squared() const { return x * x + y * y; }
 };
 
-Vector operator+(const Vector& a, const Vector& b);
-Vector operator-(const Vector& a, const Vector& b);
-Vector operator*(double scalar, const Vector& a);
-Vector operator*(const Vector& a, double scalar);
-Vector operator/(const Vector& a, double scalar);
-double dot(const Vector& a, const Vector& b);
-Vector cross(const Vector& a, const Vector& b);
-Vector operator-(const Vector& a);
-Vector operator*(const Vector& a, const Vector& b);
-double det(const Vector& a, const Vector& b);
-double cross2d(const Vector& a, const Vector& b);
+inline Vec2 operator+(const Vec2& a, const Vec2& b) { return {a.x + b.x, a.y + b.y}; }
+inline Vec2 operator-(const Vec2& a, const Vec2& b) { return {a.x - b.x, a.y - b.y}; }
+inline Vec2 operator*(double s, const Vec2& a) { return {s * a.x, s * a.y}; }
+inline Vec2 operator*(const Vec2& a, double s) { return s * a; }
+inline Vec2 operator/(const Vec2& a, double s) { return {a.x / s, a.y / s}; }
 
-#endif // VECTOR_H
+inline Vec2& operator+=(Vec2& a, const Vec2& b) {
+    a = a + b;
+    return a;
+}
+
+inline double dot(const Vec2& a, const Vec2& b) { return a.x * b.x + a.y * b.y; }
+
+// z-component of the 3D cross product; twice the signed area of the triangle (0, a, b).
+inline double cross(const Vec2& a, const Vec2& b) { return a.x * b.y - a.y * b.x; }

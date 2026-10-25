@@ -1,20 +1,10 @@
-#include "Vector.h"
+#pragma once
 
+#include <string>
 #include <vector>
-#include <iostream>
-#include <random>
-#include <chrono>
-#include <sstream>
 
-#include "Polygon.h"
+#include "polygon.h"
 
-#ifndef SAVESVG_H
-#define SAVESVG_H
-
-void save_svg(const std::vector<Polygon> &polygons, std::string filename, std::string fillcol = "none");
-
-void save_svg_animated(const std::vector<Polygon> &polygons, std::string filename, int frameid, int nbframes);
-
-void save_frame(const std::vector<Polygon> &cells, std::string filename, int frameid = 0);
-
-#endif // SAVESVG_H
+// Rasterizes fluid cells (blue, with black outlines) on a white square image and
+// writes it as a PNG. Returns false if the file could not be written.
+bool write_frame_png(const std::vector<Polygon>& cells, const std::string& path, int size = 1000);
