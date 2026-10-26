@@ -18,6 +18,9 @@ public:
     // Throws std::runtime_error if the file cannot be read.
     void load_obj(const std::string& path);
 
+    // Appends one triangle (useful for procedural meshes and tests).
+    void add_triangle(const Vec3& a, const Vec3& b, const Vec3& c);
+
     // Transforms are applied in call order: translate(p) then scale(s) maps v to s * (v + p).
     void translate(const Vec3& offset);
     void scale(double factor);

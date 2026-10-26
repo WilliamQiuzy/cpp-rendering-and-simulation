@@ -1,6 +1,6 @@
 // Free-surface fluid simulated with semi-discrete optimal transport.
 //
-//   ot_fluid [--particles N] [--frames N] [--seed N] [--output-dir DIR]
+//   photonflow-fluid [--particles N] [--frames N] [--seed N] [--output-dir DIR]
 //
 // Writes one PNG per frame (DIR/frame_0000.png, ...).
 

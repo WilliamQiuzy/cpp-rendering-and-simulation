@@ -1,7 +1,7 @@
 // Monte Carlo path tracer: renders a cat mesh inside a room of colored walls.
 //
-//   path_tracer [--samples N] [--depth N] [--size N] [--model PATH] [--output PATH]
-//               [--mirror-sphere] [--glass-sphere]
+//   photonflow-render [--samples N] [--depth N] [--size N] [--model PATH] [--output PATH]
+//                     [--mirror-sphere] [--glass-sphere]
 
 #include <algorithm>
 #include <chrono>
@@ -23,8 +23,8 @@
 #include "triangle_mesh.h"
 
 // Set by CMake to the absolute path of assets/cat.obj so the binary runs from any directory.
-#ifndef PATH_TRACER_DEFAULT_MODEL
-#define PATH_TRACER_DEFAULT_MODEL "assets/cat.obj"
+#ifndef PHOTONFLOW_DEFAULT_MODEL
+#define PHOTONFLOW_DEFAULT_MODEL "assets/cat.obj"
 #endif
 
 namespace {
@@ -33,7 +33,7 @@ struct Options {
     int samples_per_pixel = 64;
     int max_bounces = 5;
     int image_size = 512;
-    std::string model_path = PATH_TRACER_DEFAULT_MODEL;
+    std::string model_path = PHOTONFLOW_DEFAULT_MODEL;
     std::string output_path = "render.png";
     bool mirror_sphere = false;
     bool glass_sphere = false;

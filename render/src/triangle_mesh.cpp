@@ -51,6 +51,14 @@ void TriangleMesh::load_obj(const std::string& path) {
     }
 }
 
+void TriangleMesh::add_triangle(const Vec3& a, const Vec3& b, const Vec3& c) {
+    const int base = static_cast<int>(vertices_.size());
+    vertices_.push_back(a);
+    vertices_.push_back(b);
+    vertices_.push_back(c);
+    triangles_.push_back({base, base + 1, base + 2});
+}
+
 void TriangleMesh::translate(const Vec3& offset) {
     for (Vec3& v : vertices_) v = v + offset;
 }
